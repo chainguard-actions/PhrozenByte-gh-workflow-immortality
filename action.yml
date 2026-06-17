@@ -1,0 +1,79 @@
+name: GitHub Workflow Immortality
+description: Keeps cronjob based triggers of GitHub workflows alive.
+inputs:
+  secret:
+    description: Personal access token of the executing GitHub user
+    required: true
+  include_forks:
+    description: Also includes forks when loading repositories
+    required: false
+    default: false
+  owner_repos:
+    description: Loads all repositories of the authenticated GitHub user (includes both public and private repositories)
+    required: false
+    default: false
+  collaborator_repos:
+    description: Loads all repositories of which the authenticated GitHub user is a collaborator of
+    required: false
+    default: false
+  member_repos:
+    description: Loads all repositories of organizations of which the authenticated GitHub user is a member of
+    required: false
+    default: false
+  users:
+    description: Loads all public repositories of the given GitHub users
+    required: false
+    default: ""
+  orgs:
+    description: Loads all repositories of the given GitHub organizations
+    required: false
+    default: ""
+  repos:
+    description: Loads the given repositories
+    required: false
+    default: ""
+  no_repo_names:
+    description: Suppresses printing repository names, but prints repository IDs only
+    required: false
+    default: false
+  verbose:
+    description: Prints a list of issued GitHub API requests
+    required: false
+    default: false
+runs:
+  using: composite
+  steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
+    - name: Run gh-workflow-immortality.sh
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.secret }}
+        OWNER_REPOS: ${{ inputs.owner_repos }}
+        COLLABORATOR_REPOS: ${{ inputs.collaborator_repos }}
+        MEMBER_REPOS: ${{ inputs.member_repos }}
+        INCLUDE_FORKS: ${{ inputs.include_forks }}
+        REPOS_USERS: ${{ inputs.users }}
+        REPOS_ORGS: ${{ inputs.orgs }}
+        REPOS: ${{ inputs.repos }}
+        NO_REPO_NAMES: ${{ inputs.no_repo_names }}
+        VERBOSE: ${{ inputs.verbose }}
+      run: ${GITHUB_ACTION_PATH}/gh-workflow-immortality.sh
+branding:
+  icon: activity
+  color: gray-dark
