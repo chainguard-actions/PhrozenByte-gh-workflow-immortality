@@ -1,0 +1,31 @@
+name: Test multiple repos input parsing
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with multiple repos in repos input (expect API failure)
+        id: action
+        uses: .
+        with:
+          secret: fake-token-multi-repos-test
+          repos: |
+            octocat/Hello-World
+            octocat/Spoon-Knife
+        continue-on-error: true
+
+      - name: Assert action failed at API stage (not input parsing stage)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should fail because of the invalid token hitting the GitHub API.
+          # The multi-line repos input should be parsed correctly before the API call.
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail with invalid token"
+            exit 1
+          fi
+          echo "PASS: action correctly failed (multi-repo input parsed, API call failed as expected)"

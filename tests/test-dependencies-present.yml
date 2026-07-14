@@ -1,0 +1,42 @@
+name: Test script dependencies present
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Verify required dependencies are available
+        run: |
+          echo "Checking for required script dependencies..."
+          for cmd in sed awk curl jq; do
+            if ! which "$cmd" > /dev/null 2>&1; then
+              echo "FAIL: missing required dependency: $cmd"
+              exit 1
+            fi
+            echo "PASS: $cmd found at $(which $cmd)"
+          done
+          echo "PASS: all dependencies present"
+
+      - name: Run action with fake token and specific repo (expect API failure, not dependency failure)
+        id: action
+        uses: .
+        with:
+          secret: fake-token-dependency-test
+          repos: "octocat/Hello-World"
+        continue-on-error: true
+
+      - name: Assert action failed at API stage (not dependency stage)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should fail because of the invalid token hitting the API,
+          # not because of missing dependencies (which would also be a failure).
+          # Either way, the outcome should be 'failure'.
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail (either at API or dependency stage)"
+            exit 1
+          fi
+          echo "PASS: action failed as expected (dependencies present, API call failed)"

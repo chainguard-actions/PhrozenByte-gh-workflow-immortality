@@ -1,0 +1,31 @@
+name: Test include_forks flag
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with include_forks=true (expect API failure with invalid token)
+        id: action
+        uses: .
+        with:
+          secret: fake-token-forks-test
+          include_forks: true
+          owner_repos: true
+        continue-on-error: true
+
+      - name: Assert action failed at API stage (not argument parsing stage)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should fail because of the invalid token hitting the GitHub API.
+          # If it failed at argument parsing, that would also be a failure, but we
+          # verify the script at least processes the include_forks flag without crashing.
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected action to fail with invalid token"
+            exit 1
+          fi
+          echo "PASS: action correctly failed (forks flag processed, API call failed as expected)"

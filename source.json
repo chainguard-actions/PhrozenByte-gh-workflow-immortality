@@ -1,6 +1,11 @@
 {
   "owner": "PhrozenByte",
   "repo": "gh-workflow-immortality",
-  "version": "",
-  "url": "https://github.com/PhrozenByte/gh-workflow-immortality"
+  "version": "v1.1",
+  "commit_sha": "4d88c4e4b609289d1a7805dec72f162c8cab7520",
+  "url": "https://github.com/PhrozenByte/gh-workflow-immortality",
+  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
+  "test_agent_version": "1",
+  "harden_agent_version": "1"
 }
