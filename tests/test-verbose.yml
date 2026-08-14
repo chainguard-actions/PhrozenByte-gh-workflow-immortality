@@ -1,0 +1,21 @@
+name: Test verbose mode
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with verbose mode enabled on a repo with no workflows
+        id: action
+        uses: .
+        with:
+          secret: ${{ github.token }}
+          repos: octocat/Spoon-Knife
+          verbose: "true"
+
+      - name: Assert action completed successfully in verbose mode
+        run: |
+          echo "Action completed in verbose mode successfully"
+          echo "PASS"
