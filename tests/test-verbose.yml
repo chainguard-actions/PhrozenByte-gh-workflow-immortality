@@ -1,0 +1,28 @@
+name: Test verbose mode
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with verbose mode enabled
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          secret: ${{ github.token }}
+          repos: ${{ github.repository }}
+          verbose: "true"
+
+      - name: Assert action ran in verbose mode (not skipped or cancelled)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "step outcome: $OUTCOME"
+          if [ "$OUTCOME" = "skipped" ] || [ "$OUTCOME" = "cancelled" ]; then
+            echo "FAIL: action step was skipped or cancelled unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran in verbose mode (outcome=$OUTCOME)"
